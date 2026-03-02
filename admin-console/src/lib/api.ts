@@ -26,6 +26,11 @@ api.interceptors.request.use((config) => {
 export type Platform = 'facebook' | 'tiktok';
 export type UserRole = 'admin' | 'operator' | 'analyst' | 'viewer';
 
+export interface JobsFilterParams {
+  campaign?: string;
+  platform?: Platform;
+}
+
 export interface PlatformConfigPayload {
   enabled: boolean;
   endpoint_url: string | null;
@@ -139,8 +144,19 @@ export async function fetchHealth(): Promise<{status: string; db: string; worker
   return data;
 }
 
-export async function fetchJobs(limit = 50): Promise<unknown> {
-  const { data } = await api.get(`/admin/jobs?limit=${limit}`);
+export async function fetchJobs(limit = 50, filters?: JobsFilterParams): Promise<unknown> {
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+
+  if (filters?.campaign) {
+    params.set('campaign', filters.campaign);
+  }
+
+  if (filters?.platform) {
+    params.set('platform', filters.platform);
+  }
+
+  const { data } = await api.get(`/admin/jobs?${params.toString()}`);
   return data;
 }
 

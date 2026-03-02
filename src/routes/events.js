@@ -388,6 +388,28 @@ router.get('/jobs', async (req, res) => {
   if (!ensureRbac(req, res, ['viewer'])) return;
   const app = req.appTenant;
   const limit = Math.min(Number.parseInt(req.query.limit, 10) || 50, 200);
+  const campaign = normalizeText(req.query.campaign);
+  const platformRaw = normalizeText(req.query.platform);
+  const platform = platformRaw ? platformRaw.toLowerCase() : null;
+
+  if (platform && !allowedPlatforms.has(platform)) {
+    return res.status(400).json({ error: 'platform must be facebook or tiktok' });
+  }
+
+  const whereClauses = ['e.app_id = $1'];
+  const values = [app.id];
+
+  if (campaign) {
+    values.push(campaign);
+    whereClauses.push(`ak.campaign = $${values.length}`);
+  }
+
+  if (platform) {
+    values.push(platform);
+    whereClauses.push(`j.platform = $${values.length}`);
+  }
+
+  values.push(limit);
 
   const result = await db.query(
     `SELECT j.id, j.event_id, j.platform, j.platform_event_name, j.status, j.attempt_count,
@@ -401,10 +423,10 @@ router.get('/jobs', async (req, res) => {
      JOIN events e ON e.id = j.event_id
      LEFT JOIN platform_pixels pp ON pp.id = j.platform_pixel_id
      LEFT JOIN attribution_keys ak ON ak.id = j.attribution_key_id
-     WHERE e.app_id = $1
+     WHERE ${whereClauses.join(' AND ')}
      ORDER BY j.id DESC
-     LIMIT $2`,
-    [app.id, limit]
+     LIMIT $${values.length}`,
+    values
   );
 
   return res.json({ jobs: result.rows });

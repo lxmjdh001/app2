@@ -10,6 +10,10 @@ import {
   Card,
   CardContent,
   Chip,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -22,6 +26,7 @@ import {
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { fetchJobs, sendSdkEvent } from '../lib/api';
+import { useAuth } from '../context/useAuth';
 
 interface JobRow {
   id: string;
@@ -59,6 +64,7 @@ function getAttributionKey(job: JobRow): string {
 }
 
 export function EventsPage() {
+  const { appRoles, selectedAppId, selectApp } = useAuth();
   const [eventName, setEventName] = useState('ftd');
   const [eventUid, setEventUid] = useState(defaultEventUid);
   const [oaUid, setOaUid] = useState('oa-demo-1');
@@ -66,8 +72,21 @@ export function EventsPage() {
   const [ttclid, setTtclid] = useState('');
   const [fbc, setFbc] = useState('');
   const [value, setValue] = useState('50');
+  const [campaignDraft, setCampaignDraft] = useState('');
+  const [platformDraft, setPlatformDraft] = useState('');
+  const [campaignFilter, setCampaignFilter] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('');
 
-  const jobsQuery = useQuery({ queryKey: ['jobs', 'events'], queryFn: () => fetchJobs(30), refetchInterval: 5000 });
+  const jobsQuery = useQuery({
+    queryKey: ['jobs', 'events', selectedAppId, campaignFilter, platformFilter],
+    queryFn: () =>
+      fetchJobs(30, {
+        campaign: campaignFilter || undefined,
+        platform: platformFilter === 'facebook' || platformFilter === 'tiktok' ? platformFilter : undefined
+      }),
+    refetchInterval: 5000,
+    enabled: Boolean(selectedAppId)
+  });
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -124,6 +143,81 @@ export function EventsPage() {
       <Alert severity="info">
         建议用追踪链接里的 `campaign` 区分广告投手（例如 buyer_a、buyer_b）；队列表会显示对应归因来源。
       </Alert>
+
+      <Card>
+        <CardContent>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            alignItems={{ xs: 'stretch', md: 'center' }}
+            flexWrap="wrap"
+          >
+            <FormControl size="small" sx={{ minWidth: 220 }}>
+              <InputLabel>App</InputLabel>
+              <Select
+                label="App"
+                value={selectedAppId ? String(selectedAppId) : ''}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  if (Number.isFinite(next) && next > 0) {
+                    selectApp(next);
+                  }
+                }}
+              >
+                {appRoles.map((role) => (
+                  <MenuItem key={role.app_id} value={String(role.app_id)}>
+                    {role.app_name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <TextField
+              size="small"
+              label="投手（campaign）"
+              placeholder="如 buyer_a"
+              value={campaignDraft}
+              onChange={(e) => setCampaignDraft(e.target.value)}
+              sx={{ minWidth: 220 }}
+            />
+
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>平台</InputLabel>
+              <Select
+                label="平台"
+                value={platformDraft}
+                onChange={(e) => setPlatformDraft(e.target.value)}
+              >
+                <MenuItem value="">全部</MenuItem>
+                <MenuItem value="facebook">Facebook</MenuItem>
+                <MenuItem value="tiktok">TikTok</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Button
+              variant="contained"
+              onClick={() => {
+                setCampaignFilter(campaignDraft.trim());
+                setPlatformFilter(platformDraft);
+              }}
+            >
+              应用筛选
+            </Button>
+
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setCampaignDraft('');
+                setPlatformDraft('');
+                setCampaignFilter('');
+                setPlatformFilter('');
+              }}
+            >
+              重置
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent>
