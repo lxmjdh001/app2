@@ -1,0 +1,5 @@
+
+> postback-saas@0.3.0 start:worker
+> node src/worker.js
+
+postback-saas worker started
