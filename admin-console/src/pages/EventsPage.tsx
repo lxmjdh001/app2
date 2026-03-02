@@ -1,5 +1,9 @@
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SendIcon from '@mui/icons-material/Send';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -95,10 +99,12 @@ export function EventsPage() {
     <Stack spacing={2}>
       <Typography variant="h5">事件上报与回传队列</Typography>
 
-      <Card>
-        <CardContent>
+      <Accordion disableGutters sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">发送测试事件（点击展开）</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
           <Stack spacing={2}>
-            <Typography variant="h6">发送测试事件（SDK 协议）</Typography>
             <TextField label="event_name" value={eventName} onChange={(e) => setEventName(e.target.value)} />
             <TextField label="event_uid" value={eventUid} onChange={(e) => setEventUid(e.target.value)} />
             <TextField label="oa_uid" value={oaUid} onChange={(e) => setOaUid(e.target.value)} />
@@ -112,8 +118,8 @@ export function EventsPage() {
             {mutation.isSuccess ? <Alert severity="success">发送成功，已进入队列。</Alert> : null}
             {mutation.isError ? <Alert severity="error">发送失败：{String(mutation.error)}</Alert> : null}
           </Stack>
-        </CardContent>
-      </Card>
+        </AccordionDetails>
+      </Accordion>
 
       <Alert severity="info">
         建议用追踪链接里的 `campaign` 区分广告投手（例如 buyer_a、buyer_b）；队列表会显示对应归因来源。

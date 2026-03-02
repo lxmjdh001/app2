@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   FormControlLabel,
+  MenuItem,
   Stack,
   Switch,
   Table,
@@ -19,6 +20,7 @@ import {
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { buildTrackingUrl, fetchAuthApps, type AuthAppRow } from '../lib/api';
 import { useAuth } from '../context/useAuth';
 
@@ -26,9 +28,12 @@ interface AppsResponse {
   apps?: AuthAppRow[];
 }
 
+const createOptionValue = '__create_new_app__';
+
 export function TrackingPage() {
+  const navigate = useNavigate();
   const { selectedAppId } = useAuth();
-  const [appKey, setAppKey] = useState('');
+  const [selectedAppKeyOverride, setSelectedAppKeyOverride] = useState('');
   const [redirect, setRedirect] = useState('https://example.com/landing');
   const [platform, setPlatform] = useState('tiktok');
   const [campaign, setCampaign] = useState('buyer_a');
@@ -44,12 +49,12 @@ export function TrackingPage() {
     return ((appsQuery.data as AppsResponse | undefined)?.apps || []);
   }, [appsQuery.data]);
 
-  const selectedAppKey = useMemo(() => {
-    const selected = apps.find((item) => item.id === selectedAppId);
-    return selected?.api_key || '';
+  const defaultSelectedApp = useMemo(() => {
+    const byCurrent = apps.find((item) => item.id === selectedAppId);
+    return byCurrent || apps[0] || null;
   }, [apps, selectedAppId]);
 
-  const effectiveAppKey = appKey || selectedAppKey;
+  const effectiveAppKey = selectedAppKeyOverride || defaultSelectedApp?.api_key || '';
 
   const trackingUrl = useMemo(
     () =>
@@ -82,26 +87,66 @@ export function TrackingPage() {
   return (
     <Stack spacing={2}>
       <Typography variant="h5">追踪链接生成器</Typography>
-      <Alert severity="warning">
-        该功能需要目标 App 的 `app_key`（JWT 登录后不会自动显示 app_key）。当前选中 app_id：{selectedAppId || '-'}
-      </Alert>
       <Alert severity="info">
-        `app_key` 可以理解为“这个 App 的身份证号”。系统靠它判断：这次点击/事件属于哪个 App，不能乱填、不能和别的 App 共用。
+        `app_key` 可以理解为“这个 App 的身份证号”。请从下拉框选择，不建议手动填写。
       </Alert>
       <Alert severity="info">
         用 `campaign` 区分投手来源（示例：`buyer_a`、`buyer_b`、`buyer_c`）。同一 App 多投手时必须填。
       </Alert>
 
+      {apps.length === 0 ? (
+        <Alert
+          severity="warning"
+          action={
+            <Button color="inherit" size="small" component={RouterLink} to="/apps">
+              去新建 App
+            </Button>
+          }
+        >
+          当前没有可用 App，请先创建 App 再生成追踪链接。
+        </Alert>
+      ) : null}
+
       <Card>
         <CardContent>
           <Stack spacing={2}>
             <TextField
-              label="app_key（应用识别码）"
-              value={effectiveAppKey}
-              onChange={(e) => setAppKey(e.target.value)}
-              helperText="已自动带入当前选中 App 的 app_key，也可手动覆盖。"
+              select
+              label="app_key（下拉选择）"
+              value={apps.length === 0 ? '' : effectiveAppKey}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === createOptionValue) {
+                  navigate('/apps');
+                  return;
+                }
+                setSelectedAppKeyOverride(value);
+              }}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return <span style={{ color: '#9e9e9e' }}>暂无可用 App，点击新建</span>;
+                  }
+                  const found = apps.find((item) => item.api_key === selected);
+                  return found ? `${found.name}（app_id: ${found.id}）` : String(selected);
+                }
+              }}
+              helperText="无可选项时，下拉中会显示“点击新建”。"
               fullWidth
-            />
+            >
+              {apps.length === 0 ? (
+                <MenuItem value={createOptionValue} sx={{ color: 'text.secondary' }}>
+                  暂无可用 App，点击新建
+                </MenuItem>
+              ) : (
+                apps.map((app) => (
+                  <MenuItem key={app.id} value={app.api_key}>
+                    {app.name}（app_id: {app.id}）
+                  </MenuItem>
+                ))
+              )}
+            </TextField>
             <TextField label="跳转链接 redirect" value={redirect} onChange={(e) => setRedirect(e.target.value)} fullWidth />
             <TextField label="平台 platform" value={platform} onChange={(e) => setPlatform(e.target.value)} fullWidth />
             <TextField label="活动 campaign（投手标识）" value={campaign} onChange={(e) => setCampaign(e.target.value)} fullWidth required />
