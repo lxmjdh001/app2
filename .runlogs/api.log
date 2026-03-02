@@ -1,5 +1,0 @@
-
-> postback-saas@0.3.0 start:api
-> node src/index.js
-
-postback-saas api listening on http://localhost:8088
