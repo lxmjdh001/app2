@@ -48,6 +48,22 @@ export interface PlatformPixelPayload {
   config_json?: Record<string, unknown>;
 }
 
+interface AppScopedOptions {
+  appId?: number;
+}
+
+function appScopedConfig(appId?: number): { headers: Record<string, string> } | undefined {
+  if (!appId || !Number.isFinite(appId) || appId <= 0) {
+    return undefined;
+  }
+
+  return {
+    headers: {
+      'x-app-id': String(appId)
+    }
+  };
+}
+
 export interface SdkEventPayload {
   event_name: string;
   event_time?: string;
@@ -165,8 +181,8 @@ export async function fetchClickEvents(limit = 50): Promise<unknown> {
   return data;
 }
 
-export async function fetchPlatformConfigs(): Promise<unknown> {
-  const { data } = await api.get('/admin/platform-configs');
+export async function fetchPlatformConfigs(options?: AppScopedOptions): Promise<unknown> {
+  const { data } = await api.get('/admin/platform-configs', appScopedConfig(options?.appId));
   return data;
 }
 
@@ -175,23 +191,23 @@ export async function savePlatformConfig(platform: Platform, payload: PlatformCo
   return data;
 }
 
-export async function fetchPlatformPixels(): Promise<unknown> {
-  const { data } = await api.get('/admin/platform-pixels');
+export async function fetchPlatformPixels(options?: AppScopedOptions): Promise<unknown> {
+  const { data } = await api.get('/admin/platform-pixels', appScopedConfig(options?.appId));
   return data;
 }
 
-export async function createPlatformPixel(platform: Platform, payload: PlatformPixelPayload): Promise<unknown> {
-  const { data } = await api.post(`/admin/platform-pixels/${platform}`, payload);
+export async function createPlatformPixel(platform: Platform, payload: PlatformPixelPayload, options?: AppScopedOptions): Promise<unknown> {
+  const { data } = await api.post(`/admin/platform-pixels/${platform}`, payload, appScopedConfig(options?.appId));
   return data;
 }
 
-export async function updatePlatformPixel(pixelId: number, payload: PlatformPixelPayload): Promise<unknown> {
-  const { data } = await api.patch(`/admin/platform-pixels/${pixelId}`, payload);
+export async function updatePlatformPixel(pixelId: number, payload: PlatformPixelPayload, options?: AppScopedOptions): Promise<unknown> {
+  const { data } = await api.patch(`/admin/platform-pixels/${pixelId}`, payload, appScopedConfig(options?.appId));
   return data;
 }
 
-export async function deletePlatformPixel(pixelId: number): Promise<unknown> {
-  const { data } = await api.delete(`/admin/platform-pixels/${pixelId}`);
+export async function deletePlatformPixel(pixelId: number, options?: AppScopedOptions): Promise<unknown> {
+  const { data } = await api.delete(`/admin/platform-pixels/${pixelId}`, appScopedConfig(options?.appId));
   return data;
 }
 

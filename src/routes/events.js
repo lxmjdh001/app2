@@ -781,7 +781,7 @@ router.get('/platform-pixels', async (req, res) => {
   const app = req.appTenant;
 
   const result = await db.query(
-    `SELECT id, platform, display_name, pixel_key, enabled, endpoint_url,
+    `SELECT id, app_id, platform, display_name, pixel_key, enabled, endpoint_url,
             config_json, priority, updated_at,
             (access_token IS NOT NULL AND access_token <> '') AS has_access_token
      FROM platform_pixels

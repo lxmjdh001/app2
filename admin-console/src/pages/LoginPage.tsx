@@ -51,10 +51,6 @@ export function LoginPage() {
               <Typography variant="h5">登录回传管理后台</Typography>
             </Stack>
 
-            <Alert severity="info">
-              使用用户名密码登录，系统会自动获取 JWT 并按角色控制功能权限。
-            </Alert>
-
             {error ? <Alert severity="error">登录失败：{error}</Alert> : null}
 
             <Box component="form" onSubmit={onSubmit}>
